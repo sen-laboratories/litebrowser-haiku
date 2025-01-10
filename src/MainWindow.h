@@ -9,19 +9,20 @@
 
 #include <Window.h>
 
-#include "../litehtml/include/litehtml.h"
-#include "../litehtml/containers/haiku/container_haiku.h"
+#include "../include/litehtml.h"
+#include "../include/litehtml/formatting_context.h"
+#include "../include/litehtml/containers/haiku/container_haiku.h"
 
 class MainWindow : public BWindow
 {
 public:
-						MainWindow(litehtml::context* ctx);
-			void		MessageReceived(BMessage *msg);
-			bool		QuitRequested(void);
-			
+						MainWindow(litehtml::formatting_context* ctx);
+			void		MessageReceived(BMessage *msg) override;
+			bool		QuitRequested(void) override;
+
 	// Unique to this class
 			void		Load(const char* filePathOrUrl);
-			
+
 	// BWindow overrides
 	virtual void		ScreenChanged(BRect	screenSize, color_space	depth) override;
 	virtual void		FrameResized(float newWidth, float newHeight) override;
@@ -29,9 +30,9 @@ public:
 protected:
 	// Internal and unique to this class
 	virtual	void		UpdateScrollbars();
-	
+
 private:
-	litehtml::context*	fContext;
+	litehtml::formatting_context*	fContext;
 	LiteHtmlView* 		fHtmlView;
 	BScrollBar* 		vScroll;
 	BScrollBar* 		hScroll;

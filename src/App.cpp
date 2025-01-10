@@ -6,15 +6,13 @@
  */
 #include "App.h"
 #include "MainWindow.h"
-#include "../litehtml/include/litehtml.h"
 
-char master_css[] = 
+char master_css[] =
 {
 #include "master.css.inc"
-,0
 };
 
-App::App(litehtml::context* ctx,const char* filePathOrUrl)
+App::App(litehtml::formatting_context* ctx,const char* filePathOrUrl)
 	:	BApplication("application/x-vnd.af-litebrowser")
 {
 	MainWindow *mainwin = new MainWindow(ctx);
@@ -27,8 +25,8 @@ App::App(litehtml::context* ctx,const char* filePathOrUrl)
 
 int main (int argc, char *argv[])
 {
-	litehtml::context html_context;
-	html_context.load_master_stylesheet(master_css);
+	litehtml::formatting_context html_context;
+	//html_context.load_master_stylesheet(master_css);
 
 	const char* filePathOrUrl = NULL;
 	if (argc > 1)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 
 include(FindPkgConfig)
 
@@ -13,38 +13,37 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O0 -DDEBUG -g")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -DDEBUG -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_C_FLAGS_RELEASE "-O3")
+set(CMAKE_PREFIX_PATH "./lib")
 
 set(LITEBROWSER_PATH src)
-set(LITEHTML_PATH litehtml)
-set(CONTAINER_PATH ${LITEHTML_PATH}/containers/haiku)
 
 #pkg_check_modules(LB_LIBS REQUIRED fontconfig gdkmm-3.0 gtkmm-3.0 libcurl cairo)
 
 set(SOURCE  ${LITEBROWSER_PATH}/App.cpp
-            ${CONTAINER_PATH}/container_haiku.cpp
             ${LITEBROWSER_PATH}/MainWindow.cpp
     )
 
 set(HEADERS ${LITEBROWSER_PATH}/MainWindow.h
             ${LITEBROWSER_PATH}/App.h
-            ${CONTAINER_PATH}/container_haiku.h
+            ./include/litehtml.h
+            ./include/litehtml/formatting_context.h
+            ./include/litehtml/containers/haiku/container_haiku.h
     )
 
-include_directories(${LITEHTML_PATH}/include ${LB_LIBS_INCLUDE_DIRS})
+set(IMPORTED_LOCATION ./lib)
 
-add_subdirectory(${LITEHTML_PATH})
+add_executable(litebrowser ${SOURCE} ${HEADERS})
 
-find_program(XXD_COMMAND xxd)
-add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/master.css.inc
-                   COMMAND cat ${CMAKE_CURRENT_SOURCE_DIR}/${LITEHTML_PATH}/include/master.css | xxd -i > ${CMAKE_CURRENT_SOURCE_DIR}/src/master.css.inc)
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/master.css.inc PROPERTIES GENERATED TRUE)
-
-add_executable(litebrowser ${SOURCE} ${HEADERS} ${CMAKE_CURRENT_SOURCE_DIR}/src/master.css.inc )
+include_directories(./include ${LB_LIBS_INCLUDE_DIRS} /boot/system/develop/headers/private/netservices /boot/system/develop/headers/private/netservices2)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD 17
         C_STANDARD 99
+	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
         )
 
-target_link_libraries(litebrowser litehtml be localestub translation bnetapi) # ${LB_LIBS_LIBRARIES}
+add_library(liblitehtml SHARED IMPORTED)
 
+set_target_properties(liblitehtml PROPERTIES IMPORTED_LOCATION ./lib/liblitehtml.so )
+
+target_link_libraries(litebrowser be localestub translation bnetapi network netservices2 liblitehtml)

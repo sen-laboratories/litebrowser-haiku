@@ -6,23 +6,26 @@
  */
 #include "MainWindow.h"
 
-#include <iostream>
-
 #include <Application.h>
-#include <UrlContext.h>
-#include <UrlRequest.h>
-#include <UrlProtocolRoster.h>
-#include <UrlProtocolDispatchingListener.h>
+
+#include <Url.h>
+#include <private/netservices/UrlProtocolDispatchingListener.h>
+#include <private/netservices2/HttpSession.h>
+#include <private/netservices2/HttpRequest.h>
+#include <private/netservices2/HttpResult.h>
+#include <private/netservices2/NetServicesDefs.h>
+
 #include <LayoutBuilder.h>
 #include <ScrollBar.h>
 #include <String.h>
 #include <Window.h>
 #include <TextView.h>
 
-#include "../litehtml/include/litehtml.h"
-#include "../litehtml/containers/haiku/container_haiku.h"
+#include <iostream>
 
-MainWindow::MainWindow(litehtml::context* ctx)
+using namespace BPrivate::Network;
+
+MainWindow::MainWindow(litehtml::formatting_context* ctx)
 	:	BWindow(BRect(100,100,500,400),"litebrowser",B_DOCUMENT_WINDOW, B_NOT_ZOOMABLE),
 	fContext(ctx),
 	fHtmlView(NULL),
@@ -32,67 +35,62 @@ MainWindow::MainWindow(litehtml::context* ctx)
 {
 	BRect bounds(Bounds());
 	// change bounds for scrollbar size
-	
+
 	bounds.bottom = bounds.bottom - 20;
 	bounds.right = bounds.right - 20;
-	
+
 	BRect hBounds(bounds);
 	hBounds.InsetBy(10,10);
 	fHtmlView = new LiteHtmlView(hBounds, "html");
 	fHtmlView->SetContext(ctx);
-	
+
 	BGroupLayout* vGroup = new BGroupLayout(B_VERTICAL, 0);
 	vGroup->SetInsets(-1, -1, -1, -1);
 	SetLayout(vGroup);
-	
-	//vGroup->AddView(fHtmlView);
-	
-	
+
 	BGroupLayout* hGroup = new BGroupLayout(B_HORIZONTAL, 0);
 	hGroup->SetInsets(0, -1, -1, -1); // hides scroll bar borders
 	BView* hView = new BView("hview", 0, hGroup);
-	
+
 	BLayoutItem* htmlView = hGroup->AddView(fHtmlView);
-	htmlView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, 
+	htmlView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH,
 		B_ALIGN_USE_FULL_HEIGHT));
 
 	vScroll = new BScrollBar("htmlscroll",
 		fHtmlView, 0, 100, B_VERTICAL);
 	vScroll->SetResizingMode(B_FOLLOW_RIGHT | B_FOLLOW_TOP);
 	BLayoutItem* liScrollBar = hGroup->AddView(vScroll);
-	liScrollBar->SetExplicitAlignment(BAlignment(B_ALIGN_RIGHT, 
+	liScrollBar->SetExplicitAlignment(BAlignment(B_ALIGN_RIGHT,
 		B_ALIGN_USE_FULL_HEIGHT));
-	
+
 	BLayoutItem* hGroupView = vGroup->AddView(hView);
-	hGroupView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, 
+	hGroupView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH,
 		B_ALIGN_USE_FULL_HEIGHT));
-		
+
 	hScroll = new BScrollBar("hhtmlscroll",
 		fHtmlView,0,100,B_HORIZONTAL);
 	hScroll->SetResizingMode(B_FOLLOW_LEFT | B_FOLLOW_BOTTOM);
 	BLayoutItem* liHScrollBar = vGroup->AddView(hScroll);
-	liHScrollBar->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH, 
+	liHScrollBar->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH,
 		B_ALIGN_BOTTOM));
 	// TODO not full width, minux 20 px due to document resize handle
-	
+
 	//BTextView* txt = new BTextView("text");
 	//vGroup->AddView(txt);
 	//txt->SetText("Some text here");
-	
-	fHtmlView->StartWatching(this,M_HTML_RENDERED);
-	
+
+	fHtmlView->StartWatching(this, M_HTML_RENDERED);
+
 	UpdateScrollbars();
 }
 
 void
 MainWindow::Load(const char* filePathOrUrl)
 {
-	//fHtmlView->RenderFile("/boot/home/git/Paladin/Documentation/Paladin Documentation.html");
-	//fHtmlView->RenderFile("/boot/home/git/test.html");
 	BUrl url(filePathOrUrl);
 	if (!url.IsValid())
 	{
-		std::cout << "  Loading file" << std::endl;
+		std::cout << "  Invalid URL, trying loading as file" << std::endl;
 		// assume a local file name has been provided
 		fHtmlView->RenderFile(filePathOrUrl);
 	} else {
@@ -105,24 +103,29 @@ MainWindow::Load(const char* filePathOrUrl)
 			fHtmlView->RenderFile(filePathOrUrl); // as above
 			return;
 		} else {
-			std::cout << "  Loading protocol: " << protocol << std::endl;
+			std::cout << "  fetching url " << url.UrlString() << " via protocol " << protocol << std::endl;
 			// Go fetch it...
-			BUrlContext* context = new BUrlContext();
-			BUrlProtocolDispatchingListener* listener = 
-				new BUrlProtocolDispatchingListener(this);
 			fDataReceived = "";
-			BUrlRequest* req = BUrlProtocolRoster::MakeRequest(
-				url,listener,context);
-			if (NULL != req)
+			BHttpRequest request(url);
+            BHttpSession session;
+			BHttpResult result = session.Execute(std::move(request), nullptr, this);
+
+            if (result.Status().code >= 200 && result.Status().code <= 400)
 			{
-				std::cout << "  Request created. Dispatching." << std::endl;
-				// do nothing other than return - handled by MessageReceived
-				req->Run();
+				std::cout << "  Request successful, got "
+                          << (!result.HasBody() ? "empty" : "") << " response "
+                          <<  (result.HasBody() ? "with body" : "")
+                          << " and status " << result.Status().code << ": " << result.Status().text
+                          << std::endl;
+
+                fDataReceived = result.Body().text->String();
+                fHtmlView->RenderHTML(fDataReceived);
+
 				return;
 			}
 		}
-		std::cout << "Unknown protocol '" << protocol 
-				  << "' for url: '" << filePathOrUrl 
+		std::cout << "Unknown protocol '" << protocol
+				  << "' for url: '" << filePathOrUrl
 				  << "'. Not rendering." << std::endl;
 	}
 }
@@ -138,7 +141,7 @@ MainWindow::MessageReceived(BMessage *msg)
 	{
 		case B_URL_PROTOCOL_NOTIFICATION:
 		{
-			//std::cout << "  UrlRequest update received" << std::endl;
+			std::cout << "  UrlRequest update received" << std::endl;
 			// data loading, request finished, or download progress
 			if (B_OK == msg->FindInt8("be:urlProtocolMessageType",&protocolWhat))
 			{
@@ -146,7 +149,7 @@ MainWindow::MessageReceived(BMessage *msg)
 				{
 					// TODO don't assume it's just a web page data
 					//      - could be image, css, etc.
-					case B_URL_PROTOCOL_DATA_RECEIVED:
+					case B_URL_PROTOCOL_DOWNLOAD_PROGRESS:
 					{
 						//std::cout << "  Data received" << std::endl;
 						if (B_OK == msg->FindString("url:data",&str))
@@ -191,7 +194,7 @@ MainWindow::MessageReceived(BMessage *msg)
 		}
 		default:
 		{
-			std::cout << "Message received: '" << msg->what 
+			std::cout << "Message received: '" << msg->what
 					  << "' (HTML Rendered: '" << M_HTML_RENDERED
 					  << "')" << std::endl;
 			BWindow::MessageReceived(msg);
@@ -222,7 +225,7 @@ MainWindow::FrameResized(float newWidth, float newHeight)
 	UpdateScrollbars();
 }
 
-void 
+void
 MainWindow::UpdateScrollbars()
 {
 	// For size of doc and length randered
