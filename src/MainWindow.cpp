@@ -84,52 +84,10 @@ MainWindow::MainWindow(litehtml::formatting_context* ctx)
 	UpdateScrollbars();
 }
 
-void
-MainWindow::Load(const char* filePathOrUrl)
+void MainWindow::Load(const char* filePathOrUrl)
 {
-	BUrl url(filePathOrUrl);
-	if (!url.IsValid())
-	{
-		std::cout << "  Invalid URL, trying loading as file" << std::endl;
-		// assume a local file name has been provided
-		fHtmlView->RenderFile(filePathOrUrl);
-	} else {
-		// Fetch remote file according to protocol
-		BString protocol = url.Protocol();
-		// Note: file:// is also supported, but seems heavy weight to use
-		if ("file" == protocol)
-		{
-			std::cout << "  Loading file (file://)" << std::endl;
-			fHtmlView->RenderFile(filePathOrUrl); // as above
-			return;
-		} else {
-			std::cout << "  fetching url " << url.UrlString() << " via protocol " << protocol << std::endl;
-			// Go fetch it...
-			fDataReceived = "";
-			BHttpRequest request(url);
-            BHttpSession session;
-			BHttpResult result = session.Execute(std::move(request), nullptr, this);
-
-            if (result.Status().code >= 200 && result.Status().code <= 400)
-			{
-				std::cout << "  Request successful, got "
-                          << (!result.HasBody() ? "empty" : "") << " response "
-                          <<  (result.HasBody() ? "with body" : "")
-                          << " and status " << result.Status().code << ": " << result.Status().text
-                          << std::endl;
-
-                fDataReceived = result.Body().text->String();
-                fHtmlView->RenderHTML(fDataReceived);
-
-				return;
-			}
-		}
-		std::cout << "Unknown protocol '" << protocol
-				  << "' for url: '" << filePathOrUrl
-				  << "'. Not rendering." << std::endl;
-	}
+    fHtmlView->RenderUrl(filePathOrUrl);
 }
-
 
 void
 MainWindow::MessageReceived(BMessage *msg)
@@ -151,7 +109,7 @@ MainWindow::MessageReceived(BMessage *msg)
 					//      - could be image, css, etc.
 					case B_URL_PROTOCOL_DOWNLOAD_PROGRESS:
 					{
-						//std::cout << "  Data received" << std::endl;
+						std::cout << "  Data received" << std::endl;
 						if (B_OK == msg->FindString("url:data",&str))
 						{
 							fDataReceived += str;
@@ -162,7 +120,7 @@ MainWindow::MessageReceived(BMessage *msg)
 					{
 						std::cout << "  BUrlRequest complete" << std::endl;
 						// TODO check success flag
-						fHtmlView->RenderHTML(fDataReceived);
+						///fHtmlView->RenderHtml(fDataReceived);    // not needed
 						break;
 					}
 					default:

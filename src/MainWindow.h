@@ -36,7 +36,7 @@ private:
 	LiteHtmlView* 		fHtmlView;
 	BScrollBar* 		vScroll;
 	BScrollBar* 		hScroll;
-	std::string			fDataReceived;
+	BString		        fDataReceived;
 };
 
 #endif

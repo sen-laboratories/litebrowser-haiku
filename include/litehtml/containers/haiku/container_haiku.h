@@ -16,6 +16,7 @@
 #include <map>
 #include <string>
 
+#include <Url.h>
 #include <View.h>
 
 class BBitmap;
@@ -33,10 +34,12 @@ public:
 
 	virtual								~LiteHtmlView();
 
-			void						SetContext(litehtml::formatting_context* ctx);
-			void						RenderFile(const char* localFilePath);
-			void						RenderHTML(const std::string& htmlText);
-
+    void        						SetContext(litehtml::formatting_context* ctx);
+    void		        				RenderFile(const char* localFilePath);
+    void				        		RenderHtml(const BString& htmlText);
+    void						        RenderUrl(const BUrl& url);
+    void                                RenderUrl(const char* fileOrHttpUrl);
+    const BString&                      FetchHttpContent(const BUrl& fileOrHttpUrl);
 
 	virtual litehtml::uint_ptr		    create_font(const char* faceName, int size, int weight, litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm) override;
 	virtual void						delete_font(litehtml::uint_ptr hFont) override;
@@ -48,6 +51,8 @@ public:
 	virtual void 						load_image(const char* src, const char* baseurl, bool redraw_on_ready) override;
 	virtual void						get_image_size(const char* src, const char* baseurl, litehtml::size& sz) override;
     virtual void                        draw_image(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const std::string& url, const std::string& base_url) override;
+    ///virtual void						draw_image(litehtml::uint_ptr hdc, const char* src, const char* baseurl, const litehtml::position& pos );
+
 	virtual void						draw_solid_fill(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::web_color& color) override;
 
 	virtual void						draw_borders(litehtml::uint_ptr hdc, const litehtml::borders& borders, const litehtml::position& draw_pos, bool root) override;
@@ -82,8 +87,7 @@ public:
 	virtual void						GetPreferredSize(float* width, float* height) override;
 
 protected:
-	void								make_url(const char* url, const char* basepath, litehtml::string& out);
-	virtual void						draw_image( litehtml::uint_ptr hdc, const char* src, const char* baseurl, const litehtml::position& pos );
+	void								make_url(const char* relativeUrl, const char* basepath, BUrl& outUrl);
 
 private:
 	litehtml::formatting_context*	    fContext;
