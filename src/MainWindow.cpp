@@ -120,7 +120,8 @@ MainWindow::MessageReceived(BMessage *msg)
 					{
 						std::cout << "  BUrlRequest complete" << std::endl;
 						// TODO check success flag
-						///fHtmlView->RenderHtml(fDataReceived);    // not needed
+                        fHtmlView->RenderHtml(fDataReceived);    // FIXME: not needed, at least for local files
+                        fDataReceived.Truncate(0);
 						break;
 					}
 					default:
