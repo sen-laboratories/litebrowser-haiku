@@ -8,12 +8,12 @@
 #define APP_H
 
 #include <Application.h>
-#include "../include/litehtml/formatting_context.h"
+#include <string>
 
 class App : public BApplication
 {
 public:
-	App(litehtml::formatting_context* ctx, const char *filePathOrUrl);
+	App(const char *filePathOrUrl, const char* masterStylesPath, const char* userStylesPath);
 };
 
 #endif

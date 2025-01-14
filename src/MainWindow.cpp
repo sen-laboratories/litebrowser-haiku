@@ -25,9 +25,8 @@
 
 using namespace BPrivate::Network;
 
-MainWindow::MainWindow(litehtml::formatting_context* ctx)
+MainWindow::MainWindow()
 	:	BWindow(BRect(100,100,500,400),"litebrowser",B_DOCUMENT_WINDOW, B_NOT_ZOOMABLE),
-	fContext(ctx),
 	fHtmlView(NULL),
 	vScroll(NULL),
 	hScroll(NULL),
@@ -42,7 +41,6 @@ MainWindow::MainWindow(litehtml::formatting_context* ctx)
 	BRect hBounds(bounds);
 	hBounds.InsetBy(10,10);
 	fHtmlView = new LiteHtmlView(hBounds, "html");
-	fHtmlView->SetContext(ctx);
 
 	BGroupLayout* vGroup = new BGroupLayout(B_VERTICAL, 0);
 	vGroup->SetInsets(-1, -1, -1, -1);
@@ -84,9 +82,9 @@ MainWindow::MainWindow(litehtml::formatting_context* ctx)
 	UpdateScrollbars();
 }
 
-void MainWindow::Load(const char* filePathOrUrl)
+void MainWindow::Load(const char* filePathOrUrl, const char* masterStylesPath, const char* userStylesPath)
 {
-    fHtmlView->RenderUrl(filePathOrUrl);
+    fHtmlView->RenderUrl(filePathOrUrl, masterStylesPath, userStylesPath);
 }
 
 void

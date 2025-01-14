@@ -34,7 +34,7 @@ set(IMPORTED_LOCATION ./lib)
 
 add_executable(litebrowser ${SOURCE} ${HEADERS})
 
-include_directories(./include ${LB_LIBS_INCLUDE_DIRS} /boot/system/develop/headers/private/netservices /boot/system/develop/headers/private/netservices2)
+include_directories(./include ./include/litehtml ${LB_LIBS_INCLUDE_DIRS} /boot/system/develop/headers/private/netservices /boot/system/develop/headers/private/netservices2)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         CXX_STANDARD 17

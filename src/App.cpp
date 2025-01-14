@@ -7,33 +7,34 @@
 #include "App.h"
 #include "MainWindow.h"
 
-char master_css[] =
-{
-#include "master.css.inc"
-};
-
-App::App(litehtml::formatting_context* ctx,const char* filePathOrUrl)
+App::App(const char* filePathOrUrl, const char* masterStylesPath, const char* userStylesPath)
 	:	BApplication("application/x-vnd.af-litebrowser")
 {
-	MainWindow *mainwin = new MainWindow(ctx);
+	MainWindow *mainwin = new MainWindow();
 	if (NULL != filePathOrUrl)
 	{
-		mainwin->Load(filePathOrUrl);
+		mainwin->Load(filePathOrUrl, masterStylesPath, userStylesPath);
 	}
 	mainwin->Show();
 }
 
 int main (int argc, char *argv[])
 {
-	litehtml::formatting_context html_context;
-	//html_context.load_master_stylesheet(master_css);
-
 	const char* filePathOrUrl = NULL;
+    const char* masterCssPath = NULL;
+    const char* userCssPath   = NULL;
+
 	if (argc > 1)
 	{
 		filePathOrUrl = argv[1];
+        if (argc > 2) {
+            masterCssPath = argv[2];
+            if (argc > 3) {
+                userCssPath = argv[3];
+            }
+        }
 	}
-	App *app = new App(&html_context,filePathOrUrl);
+	App *app = new App(filePathOrUrl, masterCssPath, userCssPath);
 	app->Run();
 	delete app;
 	return 0;
