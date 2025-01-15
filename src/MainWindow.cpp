@@ -26,60 +26,29 @@
 using namespace BPrivate::Network;
 
 MainWindow::MainWindow()
-	:	BWindow(BRect(100,100,500,400),"litebrowser",B_DOCUMENT_WINDOW, B_NOT_ZOOMABLE),
+	:	BWindow(BRect(100,100,500,400),"litebrowser",
+                B_DOCUMENT_WINDOW, B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE),
 	fHtmlView(NULL),
-	vScroll(NULL),
-	hScroll(NULL),
 	fDataReceived()
 {
-	BRect bounds(Bounds());
-	// change bounds for scrollbar size
+	fHtmlView = new LiteHtmlView(Bounds().InsetBySelf(B_V_SCROLL_BAR_WIDTH, B_H_SCROLL_BAR_HEIGHT), "html");
+    fScrollView = new BScrollView("htmlScrollview", fHtmlView, 0, true, true);
 
-	bounds.bottom = bounds.bottom - 20;
-	bounds.right = bounds.right - 20;
+	BLayoutBuilder::Group<>(this, B_VERTICAL, 0.0)
+        .Add(fScrollView);
 
-	BRect hBounds(bounds);
-	hBounds.InsetBy(10,10);
-	fHtmlView = new LiteHtmlView(hBounds, "html");
+    ResizeTo(640.0, 860.0);
+    CenterOnScreen();
 
-	BGroupLayout* vGroup = new BGroupLayout(B_VERTICAL, 0);
-	vGroup->SetInsets(-1, -1, -1, -1);
-	SetLayout(vGroup);
+    BSize min = fScrollView->MinSize();
+	BSize max = fScrollView->MaxSize();
+	fScrollView->SetExplicitMinSize(min);
+	fScrollView->SetExplicitMaxSize(max);
 
-	BGroupLayout* hGroup = new BGroupLayout(B_HORIZONTAL, 0);
-	hGroup->SetInsets(0, -1, -1, -1); // hides scroll bar borders
-	BView* hView = new BView("hview", 0, hGroup);
+    fScrollBarHorizontal = fScrollView->ScrollBar(B_HORIZONTAL);
+    fScrollBarVertical   = fScrollView->ScrollBar(B_VERTICAL);
 
-	BLayoutItem* htmlView = hGroup->AddView(fHtmlView);
-	htmlView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH,
-		B_ALIGN_USE_FULL_HEIGHT));
-
-	vScroll = new BScrollBar("htmlscroll",
-		fHtmlView, 0, 100, B_VERTICAL);
-	vScroll->SetResizingMode(B_FOLLOW_RIGHT | B_FOLLOW_TOP);
-	BLayoutItem* liScrollBar = hGroup->AddView(vScroll);
-	liScrollBar->SetExplicitAlignment(BAlignment(B_ALIGN_RIGHT,
-		B_ALIGN_USE_FULL_HEIGHT));
-
-	BLayoutItem* hGroupView = vGroup->AddView(hView);
-	hGroupView->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH,
-		B_ALIGN_USE_FULL_HEIGHT));
-
-	hScroll = new BScrollBar("hhtmlscroll",
-		fHtmlView,0,100,B_HORIZONTAL);
-	hScroll->SetResizingMode(B_FOLLOW_LEFT | B_FOLLOW_BOTTOM);
-	BLayoutItem* liHScrollBar = vGroup->AddView(hScroll);
-	liHScrollBar->SetExplicitAlignment(BAlignment(B_ALIGN_USE_FULL_WIDTH,
-		B_ALIGN_BOTTOM));
-	// TODO not full width, minux 20 px due to document resize handle
-
-	//BTextView* txt = new BTextView("text");
-	//vGroup->AddView(txt);
-	//txt->SetText("Some text here");
-
-	fHtmlView->StartWatching(this, M_HTML_RENDERED);
-
-	UpdateScrollbars();
+    fHtmlView->StartWatching(this, M_HTML_RENDERED);
 }
 
 void MainWindow::Load(const char* filePathOrUrl, const char* masterStylesPath, const char* userStylesPath)
@@ -103,8 +72,6 @@ MainWindow::MessageReceived(BMessage *msg)
 			{
 				switch (protocolWhat)
 				{
-					// TODO don't assume it's just a web page data
-					//      - could be image, css, etc.
 					case B_URL_PROTOCOL_DOWNLOAD_PROGRESS:
 					{
 						std::cout << "  Data received" << std::endl;
@@ -117,9 +84,11 @@ MainWindow::MessageReceived(BMessage *msg)
 					case B_URL_PROTOCOL_REQUEST_COMPLETED:
 					{
 						std::cout << "  BUrlRequest complete" << std::endl;
-						// TODO check success flag
+
                         fHtmlView->RenderHtml(fDataReceived);    // FIXME: not needed, at least for local files
                         fDataReceived.Truncate(0);
+                        UpdateScrollBars();
+
 						break;
 					}
 					default:
@@ -139,7 +108,8 @@ MainWindow::MessageReceived(BMessage *msg)
 					case M_HTML_RENDERED:
 					{
 						std::cout << "HTML_RENDERED received" << std::endl;
-						UpdateScrollbars();
+                        UpdateScrollBars();
+                        fHtmlView->Invalidate();
 					}
 					default:
 					{
@@ -160,40 +130,28 @@ MainWindow::MessageReceived(BMessage *msg)
 	}
 }
 
-
-bool
-MainWindow::QuitRequested(void)
-{
-	be_app->PostMessage(B_QUIT_REQUESTED);
-	return true;
-}
-
 void
 MainWindow::ScreenChanged(BRect	screenSize, color_space	depth)
 {
+    UpdateScrollBars();
 	fHtmlView->Invalidate();
-	UpdateScrollbars();
 }
 
 void
 MainWindow::FrameResized(float newWidth, float newHeight)
 {
+    UpdateScrollBars();
 	fHtmlView->Invalidate();
-	UpdateScrollbars();
 }
 
 void
-MainWindow::UpdateScrollbars()
+MainWindow::UpdateScrollBars()
 {
-	// For size of doc and length randered
-	float pWidth,pHeight;
-	fHtmlView->GetPreferredSize(&pWidth,&pHeight);
-	// actual current size of view
-	BRect size(fHtmlView->Bounds());
-	// now set scroll bars
-	// Don't forget the 10px insets for the view on each side
-	hScroll->SetRange(0,pWidth <= size.Width() ? 0 : pWidth - size.Width() + 20);
-	hScroll->SetSteps(10,size.Width());
-	vScroll->SetRange(0,pHeight <= size.Height() ? 0 : pHeight - size.Height() + 20);
-	vScroll->SetSteps(10,size.Height());
+    BRect size = fHtmlView->GetClientRect();
+    BRect bounds(fScrollView->Bounds());
+
+    fScrollBarHorizontal->SetRange(0,  size.Width());
+    fScrollBarHorizontal->SetSteps(10, size.Width() / 10);
+    fScrollBarVertical->SetRange(0,  size.Height());
+    fScrollBarVertical->SetSteps(10, size.Height() / 10);
 }

@@ -7,6 +7,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <ScrollView.h>
 #include <Window.h>
 
 #include "../include/litehtml.h"
@@ -16,24 +17,21 @@ class MainWindow : public BWindow
 {
 public:
 						MainWindow();
-			void		MessageReceived(BMessage *msg) override;
-			bool		QuitRequested(void) override;
-
-	// Unique to this class
 			void		Load(const char* filePathOrUrl, const char* masterStylesPath, const char* userStylesPath);
 
 	// BWindow overrides
+			void		MessageReceived(BMessage *msg) override;
 	virtual void		ScreenChanged(BRect	screenSize, color_space	depth) override;
 	virtual void		FrameResized(float newWidth, float newHeight) override;
 
 protected:
-	// Internal and unique to this class
-	virtual	void		UpdateScrollbars();
+    void                UpdateScrollBars();
 
 private:
 	LiteHtmlView* 		fHtmlView;
-	BScrollBar* 		vScroll;
-	BScrollBar* 		hScroll;
+    BScrollView*        fScrollView;
+    BScrollBar*         fScrollBarHorizontal;
+    BScrollBar*         fScrollBarVertical;
 	BString		        fDataReceived;
 };
 
