@@ -109,7 +109,7 @@ MainWindow::MessageReceived(BMessage *msg)
 					{
 						std::cout << "HTML_RENDERED received" << std::endl;
                         UpdateScrollBars();
-                        fHtmlView->Invalidate();
+                        //fHtmlView->Invalidate();
 					}
 					default:
 					{
@@ -121,9 +121,6 @@ MainWindow::MessageReceived(BMessage *msg)
 		}
 		default:
 		{
-			std::cout << "Message received: '" << msg->what
-					  << "' (HTML Rendered: '" << M_HTML_RENDERED
-					  << "')" << std::endl;
 			BWindow::MessageReceived(msg);
 			break;
 		}
@@ -147,8 +144,8 @@ MainWindow::FrameResized(float newWidth, float newHeight)
 void
 MainWindow::UpdateScrollBars()
 {
-    BRect size = fHtmlView->GetClientRect();
-    BRect bounds(fScrollView->Bounds());
+    BSize viewSize(fScrollView->PreferredSize());
+    BSize size = fHtmlView->GetSize();
 
     fScrollBarHorizontal->SetRange(0,  size.Width());
     fScrollBarHorizontal->SetSteps(10, size.Width() / 10);
