@@ -49,6 +49,7 @@ MainWindow::MainWindow()
     fScrollBarVertical   = fScrollView->ScrollBar(B_VERTICAL);
 
     fHtmlView->StartWatching(this, M_HTML_RENDERED);
+    fHtmlView->StartWatching(this, M_ANCHOR_CLICKED);
 }
 
 void MainWindow::Load(const char* filePathOrUrl, const char* masterStylesPath, const char* userStylesPath)
@@ -111,6 +112,17 @@ MainWindow::MessageReceived(BMessage *msg)
                         UpdateScrollBars();
                         //fHtmlView->Invalidate();
 					}
+                    case M_ANCHOR_CLICKED:
+                    {
+                        const char *href = msg->FindString("href");
+                        std::cout << "Anchor clicked received: " << href << std::endl;
+                        BPoint anchorPos;
+                        status_t result = msg->FindPoint("fragmentPos", &anchorPos);
+                        if (result == B_OK) {
+                            std::cout << "   scrolling to anchor with y pos = " << anchorPos.y << std::endl;
+                            fHtmlView->ScrollTo(0, anchorPos.y);
+                        }
+                    }
 					default:
 					{
 						break;
@@ -145,10 +157,11 @@ void
 MainWindow::UpdateScrollBars()
 {
     BSize viewSize(fScrollView->PreferredSize());
-    BSize size = fHtmlView->GetSize();
+    float width, height;
+    fHtmlView->GetPreferredSize(&width, &height);
 
-    fScrollBarHorizontal->SetRange(0,  size.Width());
-    fScrollBarHorizontal->SetSteps(10, size.Width() / 10);
-    fScrollBarVertical->SetRange(0,  size.Height());
-    fScrollBarVertical->SetSteps(10, size.Height() / 10);
+    fScrollBarHorizontal->SetRange(0,  width);
+    fScrollBarHorizontal->SetSteps(10, width / 10);
+    fScrollBarVertical->SetRange(0,  height);
+    fScrollBarVertical->SetSteps(10, height / 10);
 }
