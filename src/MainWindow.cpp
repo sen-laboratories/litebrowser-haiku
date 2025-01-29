@@ -16,6 +16,7 @@
 #include <private/netservices2/NetServicesDefs.h>
 
 #include <LayoutBuilder.h>
+#include <Roster.h>
 #include <ScrollBar.h>
 #include <String.h>
 #include <Window.h>
@@ -60,7 +61,7 @@ void MainWindow::Load(const char* filePathOrUrl, const char* masterStylesPath, c
 void
 MainWindow::MessageReceived(BMessage *msg)
 {
-	int32 originalWhat;
+	uint32 originalWhat;
 	int8 protocolWhat;
 	BString str;
 	switch (msg->what)
@@ -102,7 +103,7 @@ MainWindow::MessageReceived(BMessage *msg)
 		}
 		case B_OBSERVER_NOTICE_CHANGE:
 		{
-			if (B_OK == msg->FindInt32(B_OBSERVE_ORIGINAL_WHAT,&originalWhat))
+			if (B_OK == msg->FindUInt32(B_OBSERVE_ORIGINAL_WHAT,&originalWhat))
 			{
 				switch (originalWhat)
 				{
@@ -116,11 +117,20 @@ MainWindow::MessageReceived(BMessage *msg)
                     {
                         const char *href = msg->FindString("href");
                         std::cout << "Anchor clicked received: " << href << std::endl;
+                        // local anchor?
                         BPoint anchorPos;
                         status_t result = msg->FindPoint("fragmentPos", &anchorPos);
                         if (result == B_OK) {
+                            // yes, scroll to position
                             std::cout << "   scrolling to anchor with y pos = " << anchorPos.y << std::endl;
                             fHtmlView->ScrollTo(0, anchorPos.y);
+                        } else {
+                           // no, open in external viewer (usually the default browser, at least for HTTP(S) links)
+                            BUrl url(href);
+                            const char* signature = url.PreferredApplication();
+                            std::cout << "   opening external link with application " << signature << std::endl;
+                            BRoster launchRoster;
+                            launchRoster.Launch(signature);
                         }
                     }
 					default:

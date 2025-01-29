@@ -44,6 +44,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 add_library(liblitehtml SHARED IMPORTED)
 
-set_target_properties(liblitehtml PROPERTIES IMPORTED_LOCATION ./lib/liblitehtml.so )
+# TODO: use proper install path and lookup!
+set_target_properties(liblitehtml PROPERTIES IMPORTED_LOCATION /boot/home/config/non-packaged/lib/liblitehtml.so )
 
 target_link_libraries(litebrowser be localestub translation bnetapi network netservices2 liblitehtml)
