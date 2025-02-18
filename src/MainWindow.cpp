@@ -3,6 +3,7 @@
  * All rights reserved. Distributed under the terms of the MIT license.
  * Constributors
  * 2019-2020	Adam Fowler <adamfowleruk@gmail.com>
+ * 20025        Gregor B. Rosenauer <gregor.rosenauer@gmail.com>
  */
 #include "MainWindow.h"
 
@@ -27,12 +28,12 @@
 using namespace BPrivate::Network;
 
 MainWindow::MainWindow()
-	:	BWindow(BRect(100,100,500,400),"litebrowser",
+	:	BWindow(BRect(0,0,640,480),"litebrowser",
                 B_DOCUMENT_WINDOW, B_ASYNCHRONOUS_CONTROLS | B_QUIT_ON_WINDOW_CLOSE),
 	fHtmlView(NULL),
 	fDataReceived()
 {
-	fHtmlView = new LiteHtmlView(Bounds().InsetBySelf(B_V_SCROLL_BAR_WIDTH, B_H_SCROLL_BAR_HEIGHT), "html");
+	fHtmlView = new LiteHtmlView(Bounds().InsetBySelf(B_V_SCROLL_BAR_WIDTH, B_H_SCROLL_BAR_HEIGHT), "htmlView");
     fScrollView = new BScrollView("htmlScrollview", fHtmlView, 0, true, true);
 
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0.0)
@@ -49,8 +50,7 @@ MainWindow::MainWindow()
     fScrollBarHorizontal = fScrollView->ScrollBar(B_HORIZONTAL);
     fScrollBarVertical   = fScrollView->ScrollBar(B_VERTICAL);
 
-    fHtmlView->StartWatching(this, M_HTML_RENDERED);
-    fHtmlView->StartWatching(this, M_ANCHOR_CLICKED);
+    fHtmlView->StartWatchingAll(this);
 }
 
 void MainWindow::Load(const char* filePathOrUrl, const char* masterStylesPath, const char* userStylesPath)
@@ -58,12 +58,12 @@ void MainWindow::Load(const char* filePathOrUrl, const char* masterStylesPath, c
     fHtmlView->RenderUrl(filePathOrUrl, masterStylesPath, userStylesPath);
 }
 
-void
-MainWindow::MessageReceived(BMessage *msg)
+void MainWindow::MessageReceived(BMessage *msg)
 {
 	uint32 originalWhat;
 	int8 protocolWhat;
 	BString str;
+
 	switch (msg->what)
 	{
 		case B_URL_PROTOCOL_NOTIFICATION:
@@ -103,7 +103,7 @@ MainWindow::MessageReceived(BMessage *msg)
 		}
 		case B_OBSERVER_NOTICE_CHANGE:
 		{
-			if (B_OK == msg->FindUInt32(B_OBSERVE_ORIGINAL_WHAT,&originalWhat))
+			if (B_OK == msg->FindUInt32(B_OBSERVE_ORIGINAL_WHAT, &originalWhat))
 			{
 				switch (originalWhat)
 				{
@@ -111,7 +111,8 @@ MainWindow::MessageReceived(BMessage *msg)
 					{
 						std::cout << "HTML_RENDERED received" << std::endl;
                         UpdateScrollBars();
-                        //fHtmlView->Invalidate();
+                        fHtmlView->Invalidate();
+                        break;
 					}
                     case M_ANCHOR_CLICKED:
                     {
@@ -125,13 +126,14 @@ MainWindow::MessageReceived(BMessage *msg)
                             std::cout << "   scrolling to anchor with y pos = " << anchorPos.y << std::endl;
                             fHtmlView->ScrollTo(0, anchorPos.y);
                         } else {
-                           // no, open in external viewer (usually the default browser, at least for HTTP(S) links)
+                            // no, open in external viewer (usually the default browser, at least for HTTP(S) links)
                             BUrl url(href);
                             const char* signature = url.PreferredApplication();
                             std::cout << "   opening external link with application " << signature << std::endl;
                             BRoster launchRoster;
                             launchRoster.Launch(signature);
                         }
+                        break;
                     }
 					default:
 					{

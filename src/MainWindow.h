@@ -10,8 +10,8 @@
 #include <ScrollView.h>
 #include <Window.h>
 
-#include "../include/litehtml.h"
-#include "../include/litehtml/containers/haiku/container_haiku.h"
+#include "litehtml.h"
+#include "containers/haiku/container_haiku.h"
 
 class MainWindow : public BWindow
 {

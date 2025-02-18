@@ -25,16 +25,13 @@ set(SOURCE  ${LITEBROWSER_PATH}/App.cpp
 
 set(HEADERS ${LITEBROWSER_PATH}/MainWindow.h
             ${LITEBROWSER_PATH}/App.h
-            ./include/litehtml.h
-            ./include/litehtml/formatting_context.h
-            ./include/litehtml/containers/haiku/container_haiku.h
     )
 
 set(IMPORTED_LOCATION ./lib)
 
 add_executable(litebrowser ${SOURCE} ${HEADERS})
 
-include_directories(./include ./include/litehtml ${LB_LIBS_INCLUDE_DIRS} /boot/system/develop/headers/private/netservices /boot/system/develop/headers/private/netservices2)
+include_directories(${LB_LIBS_INCLUDE_DIRS} /boot/home/config/non-packaged/include/litehtml /boot/system/develop/headers/private/netservices /boot/system/develop/headers/private/netservices2)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         CXX_STANDARD 17
